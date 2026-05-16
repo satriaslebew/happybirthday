@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Birthday Surprise 🎂</title>
+<style>
+ * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  img { pointer-events: none; }
+
+  body { background: #000; font-family: 'Georgia', serif; overflow: hidden; width: 100vw; height: 100vh; }
+
+  /* === QR SCREEN === */
+  #qr-screen {
+    position: fixed; inset: 0; background: #0a0010;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; gap: 0;
+  }
+  #qr-screen h1 {
+    /* ✏️ EDIT: Judul di halaman QR */
+    color: #ff69b4; font-size: 1.4rem; margin-bottom: 1.5rem;
+    letter-spacing: 2px; text-align: center; line-height: 1.6;
+  }
+  #qr-box {
+    background: white; padding: 16px; border-radius: 12px;
+    box-shadow: 0 0 40px rgba(255,105,180,0.5);
+  }
+  #qr-box img { display: block; width: 200px; height: 200px; }
+  #qr-screen p { color: #ff69b4; margin-top: 1rem; font-size: 0.85rem; opacity: 0.7; }
+  #enter-btn {
+    margin-top: 2rem; background: transparent; border: 2px solid #ff69b4;
+    color: #ff69b4; padding: 12px 32px; border-radius: 999px; font-size: 1rem;
+    cursor: pointer; letter-spacing: 1px; transition: all 0.3s;
+  }
+  #enter-btn:hover { background: #ff69b4; color: #000; }
+
+  /* === MATRIX SCREEN === */
+  #matrix-screen { position: fixed; inset: 0; display: none; z-index: 90; }
+  #matrix-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #countdown-text {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 20vw; font-weight: bold; color: #ff69b4;
+    text-shadow: 0 0 40px #ff1493, 0 0 80px #ff69b4;
+    font-family: 'Georgia', serif;
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+  /* === WORD REVEAL SCREEN === */
+  #word-screen {
+    position: fixed; inset: 0; background: #000; display: none; z-index: 85;
+    align-items: center; justify-content: center;
+  }
+  #word-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #big-word {
+    position: relative; z-index: 2;
+    font-size: 13vw; font-weight: bold; color: #ff69b4;
+    text-shadow: 0 0 30px #ff1493, 0 0 60px #ff69b4;
+    font-family: 'Georgia', serif; letter-spacing: 4px;
+    animation: wordIn 0.5s ease-out;
+  }
+  @keyframes wordIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* === GIFT SCREEN === */
+  #gift-screen {
+    position: fixed; inset: 0; background: #000510; display: none; z-index: 80;
+    flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  #star-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gift-emoji { font-size: 8rem; animation: bounce 1s ease-in-out infinite; position: relative; z-index: 2; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+  .gift-text {
+    position: relative; z-index: 2; text-align: center; margin-top: 1rem;
+    font-size: 2.2rem; color: #fff; text-shadow: 0 0 20px #ff69b4;
+    font-family: 'Georgia', serif;
+  }
+  .gift-sub { font-size: 1rem; color: #ff69b4; margin-top: 0.5rem; opacity: 0.8; position: relative; z-index: 2; }
+
+  /* === CARD SWIPE SCREEN === */
+  #card-screen {
+    position: fixed; inset: 0; background: #000510; display: none; z-index: 75;
+    flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  }
+  #card-star-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .card-stack { position: relative; z-index: 2; width: min(90vw, 360px); height: 480px; }
+  .swipe-card {
+    position: absolute; inset: 0; background: white; border-radius: 20px;
+    padding: 20px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(255,105,180,0.4);
+    cursor: grab; display: flex; flex-direction: column;
+    transform-origin: bottom center;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .swipe-card.active { transition: none; }
+  .swipe-card.gone { transform: translateX(-150%) rotate(-30deg) !important; opacity: 0; pointer-events: none; }
+  .swipe-card.behind { transform: scale(0.9) translateY(24px); }
+  .swipe-card.second { transform: scale(0.95) translateY(12px); }
+  .card-quote {
+    background: linear-gradient(135deg, #fff5f8, #fff);
+    border-left: 3px solid #ff69b4; padding: 12px 16px; border-radius: 8px;
+    font-style: italic; color: #c0396e; font-size: 0.88rem; margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .card-heart { text-align: right; font-size: 1.2rem; margin-bottom: 8px; }
+  .card-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; }
+  .card-photo {
+    border-radius: 12px; overflow: hidden;
+    background: linear-gradient(135deg, #ffd6e7, #ffadd2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; min-height: 100px;
+  }
+  .card-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .swipe-hint {
+    position: relative; z-index: 2; margin-top: 0.8rem;
+    color: #ff69b4; font-size: 0.8rem; opacity: 0.7; text-align: center;
+  }
+  .swipe-indicator { display: flex; gap: 6px; position: relative; z-index: 2; margin-top: 0.4rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,105,180,0.3); transition: background 0.3s; }
+  .dot.active { background: #ff69b4; }
+
+  /* === HEART COLLAGE SCREEN === */
+  #heart-screen {
+    position: fixed; inset: 0; background: #000510; display: none; z-index: 70;
+    align-items: center; justify-content: center; flex-direction: column;
+  }
+  #heart-star-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #heart-collage { position: relative; z-index: 2; width: 100vw; height: 70vh; }
+  .heart-photo {
+    position: absolute; border-radius: 10px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 16px rgba(255,105,180,0.7);
+    border: 3px solid rgba(255,255,255,0.9);
+    transform: scale(0);
+    animation: popIn 0.4s ease-out forwards;
+  }
+  .heart-photo img { width: 100%; height: 100%; object-fit: cover; }
+  @keyframes popIn {
+    from { transform: scale(0) rotate(-10deg); opacity: 0; }
+    to { transform: scale(1) rotate(var(--rot)); opacity: 1; }
+  }
+  #heart-title {
+  position: fixed;
+  top: 45%;
+  left: 40%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  color: #ff69b4; font-size: 1.1rem; text-align: center;
+  font-family: 'Georgia', serif; letter-spacing: 2px;
+  animation: fadeIn 1s 2s ease both;
+  text-shadow: 0 0 20px #ff69b4;
+}
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     🎨 QR SCREEN
+     ============================================================ -->
+<div id="qr-screen">
+  <h1>
+    🎂 Halooooo sayangkuuuuu!<br>💕
+  </h1>
+  <button id="enter-btn" onclick="startExperience()">✨ Buka Kejutan</button>
+</div>
+
+  <!-- ✏️ EDIT: Ganti URL website di bawah ini -->
+  <p>birthday-surprise.vercel.app</p>
+
+  <!-- ✏️ EDIT: Ganti teks tombol -->
+  <button id="enter-btn" onclick="startExperience()">✨ Buka Kejutan</button>
+</div>
+
+<!-- ============================================================
+     ⏳ MATRIX COUNTDOWN SCREEN (otomatis, tidak perlu diedit)
+     ============================================================ -->
+<div id="matrix-screen">
+  <canvas id="matrix-canvas"></canvas>
+  <div id="countdown-text">3</div>
+</div>
+
+<!-- ============================================================
+     💬 WORD REVEAL SCREEN (otomatis, tidak perlu diedit)
+     ============================================================ -->
+<div id="word-screen">
+  <canvas id="word-canvas"></canvas>
+  <div id="big-word"></div>
+</div>
+
+<!-- ============================================================
+     🎁 GIFT SCREEN
+     ============================================================ -->
+<div id="gift-screen">
+  <canvas id="star-canvas"></canvas>
+
+  <!-- ✏️ EDIT: Ganti emoji gift (bisa 🎂 🎁 🎊 🎉 🌸 dll) -->
+  <div class="gift-emoji">🎂</div>
+
+  <!-- ✏️ EDIT: Ganti teks utama gift screen -->
+  <div class="gift-text">Happy Birthday, Virzha! 🎉</div>
+
+  <!-- ✏️ EDIT: Ganti teks bawah gift screen -->
+  <div class="gift-sub">Semoga hari mu selalu menyenangkan 💕</div>
+</div>
+
+<!-- ============================================================
+     💌 CARD SWIPE SCREEN
+     ============================================================ -->
+<div id="card-screen">
+  <canvas id="card-star-canvas"></canvas>
+  <div class="card-stack" id="card-stack"></div>
+  <div class="swipe-indicator" id="dots"></div>
+  <div class="swipe-hint">← Swipe untuk melihat lebih banyak →</div>
+</div>
+
+<!-- ============================================================
+     ❤️ HEART COLLAGE SCREEN
+     ============================================================ -->
+<div id="heart-screen">
+  <canvas id="heart-star-canvas"></canvas>
+  <div id="heart-collage"></div>
+
+  <!-- ✏️ EDIT: Ganti teks penutup -->
+  <div id="heart-title">❤️ Made with love, for you ❤️</div>
+</div>
+
+
+<!-- ============================================================
+     ⚙️ JAVASCRIPT - DATA YANG BISA DIEDIT
+     ============================================================ -->
+<script>
+
+// ============================================================
+// ✏️ EDIT BAGIAN INI: KATA-KATA YANG MUNCUL SATU PER SATU
+// Tambah atau kurangi kata sesukamu
+// ============================================================
+const WORDS = [
+  'HAPPY',
+  'BIRTHDAY',
+  'TO',
+  'Virzha',   // ← Ganti dengan nama penerima
+  '❤️'
+];
+
+// ============================================================
+// ✏️ EDIT BAGIAN INI: ISI KARTU UCAPAN
+// Setiap objek = 1 kartu. Tambah kartu dengan menambah objek {}.
+// photos: array emoji ATAU URL gambar (contoh: 'foto1.jpg')
+// ============================================================
+const CARDS = [
+  {
+    quote: "Happy Birthday cayangggkuuuu 🧡",           // ← Pesan kartu 1
+    photos: [
+      'happybirthday/foto1.jpeg', 'happybirthday/foto2.jpeg',    // ← Ganti dengan URL foto: 'foto1.jpg' atau link https://...
+      'happybirthday/foto3.jpeg', 'happybirthday/foto4.jpeg'     // ← Bisa emoji atau foto
+    ]
+  },
+  {
+    quote: "As long as you're smiling, I'm happy. Stay happy, my love. 💕",  // ← Pesan kartu 2
+    photos: [
+      'happybirthday/foto5.jpeg', 'happybirthday/foto39.jpeg',
+      'happybirthday/foto40.jpeg', 'happybirthday/foto41.jpeg'
+    ]
+  },
+  {
+    quote: "Semoga semua impianmu terwujud tahun ini! ✨",    // ← Pesan kartu 3
+    photos: [
+      'happybirthday/foto42.jpeg', 'happybirthday/foto43.jpeg',
+      'happybirthday/foto44.jpeg', 'happybirthday/foto45.jpeg'
+    ]
+  },
+  {
+    quote: "Thank you for being you. You're one in a million. 💝",   // ← Pesan kartu 4
+    photos: [
+      'happybirthday/foto46.jpeg', 'happybirthday/foto47.jpeg',
+      'happybirthday/foto48.jpeg', 'happybirthday/foto49.jpeg'
+    ]
+  },
+  // ← Tambah kartu baru di sini dengan format yang sama:
+  // {
+  //   quote: "Pesan kartu baru",
+  //   photos: ['emoji1', 'emoji2', 'emoji3', 'emoji4']
+  // },
+];
+
+// ============================================================
+// ✏️ EDIT: Foto-foto untuk Heart Collage di akhir
+// Masukkan URL foto atau emoji
+// ============================================================
+const HEART_PHOTOS = [
+  'happybirthday/foto6.jpeg', 'happybirthday/foto7.jpeg', 'happybirthday/foto8.jpeg', 'happybirthday/foto9.jpeg',
+  'happybirthday/foto10.jpeg', 'happybirthday/foto11.jpeg', 'happybirthday/foto12.jpeg', 'happybirthday/foto13.jpeg',
+  'happybirthday/foto14.jpeg', 'happybirthday/foto15.jpeg', 'happybirthday/foto16.jpeg', 'happybirthday/foto36.jpeg',
+  'happybirthday/foto18.jpeg', 'happybirthday/foto19.jpeg', 'happybirthday/foto20.jpeg', 'happybirthday/foto21.jpeg',
+  'happybirthday/foto26.jpeg', 'happybirthday/foto27.jpeg', 'happybirthday/foto28.jpeg', 'happybirthday/foto38.jpeg'
+];
+
+// ============================================================
+// ✏️ EDIT: Durasi gift screen tampil (dalam milidetik)
+// 8000 = 8 detik, 10000 = 10 detik
+// ============================================================
+const GIFT_DURATION = 2000;
+
+// ============================================================
+// ✏️ EDIT: Kecepatan tampil setiap kata (dalam milidetik)
+// 900 = 0.9 detik per kata
+// ============================================================
+const WORD_SPEED = 900;
+
+
+// ============================================================
+// ⚙️ KODE ENGINE - TIDAK PERLU DIEDIT
+// ============================================================
+
+let matrixInterval1, matrixInterval2;
+let wordIdx = 0;
+
+// Matrix rain animation
+function runMatrix(canvas, color='#ff69b4', bgAlpha=0.04) {
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const cols = Math.floor(canvas.width / 14);
+  const drops = Array(cols).fill(0);
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOP❤♪♬';
+  return setInterval(() => {
+    ctx.fillStyle = `rgba(0,0,0,${bgAlpha})`; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = color; ctx.font = '13px monospace';
+    drops.forEach((y, i) => {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(ch, i*14, y*14);
+      if(y*14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 40);
+}
+
+// Star background animation
+function createStars(canvas) {
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const stars = Array.from({length:180}, () => ({
+    x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+    r: Math.random()*2+0.4, phase: Math.random()*Math.PI*2, speed: Math.random()*0.5+0.1
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    stars.forEach(s => {
+      const opacity = Math.abs(Math.sin(s.phase + frame * s.speed * 0.02));
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${opacity})`; ctx.fill();
+    });
+    // floating pink hearts
+    if(frame % 80 === 0) {
+      ctx.font = '14px serif'; ctx.globalAlpha = 0.4;
+      ctx.fillText('❤', Math.random()*canvas.width, Math.random()*canvas.height);
+      ctx.globalAlpha = 1;
+    }
+    frame++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ---- MAIN FLOW ----
+
+function startExperience() {
+  document.getElementById('qr-screen').style.display = 'none';
+  const ms = document.getElementById('matrix-screen');
+  ms.style.display = 'block';
+  matrixInterval1 = runMatrix(document.getElementById('matrix-canvas'));
+
+  let count = 3;
+  const cd = document.getElementById('countdown-text');
+  cd.textContent = count;
+
+  const interval = setInterval(() => {
+    count--;
+    if(count > 0) {
+      cd.textContent = count;
+      cd.style.animation = 'none'; void cd.offsetWidth;
+      cd.style.animation = 'pulse 0.8s ease-in-out infinite';
+    } else {
+      clearInterval(interval); clearInterval(matrixInterval1);
+      ms.style.display = 'none';
+      showWords();
+    }
+  }, 1000);
+}
+
+function showWords() {
+  const ws = document.getElementById('word-screen');
+  ws.style.display = 'flex';
+  matrixInterval2 = runMatrix(document.getElementById('word-canvas'), '#cc1166', 0.05);
+  wordIdx = 0;
+  showNextWord();
+}
+
+function showNextWord() {
+  if(wordIdx >= WORDS.length) {
+    clearInterval(matrixInterval2);
+    document.getElementById('word-screen').style.display = 'none';
+    showGift();
+    return;
+  }
+  const bw = document.getElementById('big-word');
+  bw.textContent = WORDS[wordIdx];
+  bw.style.animation = 'none'; void bw.offsetWidth;
+  bw.style.animation = 'wordIn 0.5s ease-out';
+  wordIdx++;
+  setTimeout(showNextWord, WORD_SPEED);
+}
+
+function showGift() {
+  const gs = document.getElementById('gift-screen');
+  gs.style.display = 'flex';
+  createStars(document.getElementById('star-canvas'));
+  setTimeout(() => {
+    gs.style.display = 'none';
+    showCards();
+  }, GIFT_DURATION);
+}
+
+// ---- CARDS ----
+let currentCard = 0, startX = 0, isDragging = false, cardEls = [];
+
+function buildPhotoEl(src) {
+  const div = document.createElement('div');
+  div.className = 'card-photo';
+  if(typeof src === 'string' && (src.startsWith('http') || src.includes('/'))) {
+    const img = document.createElement('img');
+    img.src = src; img.alt = '';
+    div.appendChild(img);
+  } else {
+    div.textContent = src;
+    div.style.fontSize = '2.5rem';
+  }
+  return div;
+}
+
+function showCards() {
+  const cs = document.getElementById('card-screen');
+  cs.style.display = 'flex';
+  createStars(document.getElementById('card-star-canvas'));
+
+  const stack = document.getElementById('card-stack');
+  const dots = document.getElementById('dots');
+  stack.innerHTML = ''; dots.innerHTML = '';
+  currentCard = 0; cardEls = [];
+
+  [...CARDS].reverse().forEach((d, i) => {
+    const card = document.createElement('div');
+    card.className = 'swipe-card';
+    const realIdx = CARDS.length - 1 - i;
+    if(realIdx === CARDS.length - 2) card.classList.add('second');
+    else if(realIdx < CARDS.length - 2) card.classList.add('behind');
+
+    const quotediv = document.createElement('div');
+    quotediv.className = 'card-quote'; quotediv.textContent = d.quote;
+    const heartdiv = document.createElement('div');
+    heartdiv.className = 'card-heart'; heartdiv.textContent = '💕';
+    const photogrid = document.createElement('div');
+    photogrid.className = 'card-photos';
+    (d.photos || []).slice(0,4).forEach(p => photogrid.appendChild(buildPhotoEl(p)));
+
+    card.appendChild(quotediv); card.appendChild(heartdiv); card.appendChild(photogrid);
+    stack.appendChild(card);
+
+    card.addEventListener('mousedown', e => { startX = e.clientX; isDragging = true; card.classList.add('active'); });
+    card.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging = true; card.classList.add('active'); }, {passive:true});
+    card.addEventListener('mousemove', e => {
+      if(!isDragging) return;
+      const dx = e.clientX - startX;
+      card.style.transform = `translateX(${dx}px) rotate(${dx*0.04}deg)`;
+    });
+    card.addEventListener('touchmove', e => {
+      if(!isDragging) return;
+      const dx = e.touches[0].clientX - startX;
+      card.style.transform = `translateX(${dx}px) rotate(${dx*0.04}deg)`;
+    }, {passive:true});
+    card.addEventListener('mouseup', e => endDrag(e.clientX, card));
+    card.addEventListener('touchend', e => endDrag(e.changedTouches[0].clientX, card));
+  });
+
+  cardEls = [...stack.querySelectorAll('.swipe-card')];
+
+  CARDS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    dots.appendChild(d);
+  });
+}
+
+function endDrag(endX, card) {
+  if(!isDragging) return; isDragging = false;
+  card.classList.remove('active');
+  const dx = endX - startX;
+  if(Math.abs(dx) > 70) {
+    card.classList.add('gone');
+    currentCard++;
+    const remaining = cardEls.filter(c => !c.classList.contains('gone'));
+    remaining.forEach((c, i) => {
+      c.classList.remove('second','behind');
+      if(i === remaining.length - 1) { /* top card, no class */ }
+      else if(i === remaining.length - 2) c.classList.add('second');
+      else c.classList.add('behind');
+      c.style.transform = '';
+    });
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === currentCard));
+    if(currentCard >= CARDS.length) {
+      setTimeout(() => { document.getElementById('card-screen').style.display = 'none'; showHeartCollage(); }, 600);
+    }
+  } else {
+    card.style.transform = '';
+  }
+}
+
+// ---- HEART COLLAGE ----
+function showHeartCollage() {
+  const hs = document.getElementById('heart-screen');
+  hs.style.display = 'flex';
+  createStars(document.getElementById('heart-star-canvas'));
+
+  const container = document.getElementById('heart-collage');
+  container.innerHTML = '';
+
+  // Generate heart shape coordinates
+  const heartPoints = [];
+  for(let a = 0; a < Math.PI * 2; a += 0.22) {
+    const x = 16 * Math.pow(Math.sin(a), 3);
+    const y = -(13*Math.cos(a) - 5*Math.cos(2*a) - 2*Math.cos(3*a) - Math.cos(4*a));
+    heartPoints.push([x, y]);
+  }
+
+  const scale = Math.min(window.innerWidth * 1.00, 550) / 25;
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight * 0.35;
+  const size = Math.min(window.innerWidth * 0.18, 90);
+
+  heartPoints.forEach((pt, i) => {
+    const x = pt[0] * scale + cx;
+    const y = pt[1] * scale + cy;
+    const el = document.createElement('div');
+    el.className = 'heart-photo';
+    el.style.left = (x - size/2) + 'px';
+    el.style.top = (y - size/2) + 'px';
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.animationDelay = (i * 55) + 'ms';
+    el.style.setProperty('--rot', (Math.random() * 20 - 10) + 'deg');
+
+    const src = HEART_PHOTOS[i % HEART_PHOTOS.length];
+    if(typeof src === 'string' && (src.startsWith('http') || src.includes('/'))) {
+      const img = document.createElement('img');
+      img.src = src; img.alt = '';
+      el.appendChild(img);
+    } else {
+      el.textContent = src;
+      el.style.fontSize = (size * 0.45) + 'px';
+      el.style.background = 'linear-gradient(135deg,#ffd6e7,#ffadd2)';
+    }
+    container.appendChild(el);
+  });
+}
+
+</script>
+</body>
+</html>
