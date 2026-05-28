@@ -570,8 +570,97 @@ function showHeartCollage() {
     }
     container.appendChild(el);
   });
+  // Tampilkan invitation setelah semua foto muncul
+  const totalDelay = heartPoints.length * 55 + 1000;
+  setTimeout(showInvitation, totalDelay);
+}
+    
+// ---- INVITATION CARD ----
+function showInvitation() {
+  const hs = document.getElementById('heart-screen');
+  hs.style.display = 'none';
+  const inv = document.createElement('div');
+  inv.id = 'inv-screen';
+  inv.style.cssText = `position:fixed;inset:0;background:#000510;z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;`;
+  const stars = document.createElement('canvas');
+  stars.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
+  inv.appendChild(stars);
+  inv.innerHTML += `
+    <div style="position:relative;z-index:2;max-width:500px;width:90%;background:linear-gradient(135deg,#fff5f8,#fff);border-radius:24px;padding:40px 32px;text-align:center;box-shadow:0 0 60px rgba(255,105,180,0.4);">
+      <div style="font-size:3rem;margin-bottom:16px;">💌</div>
+      <h2 style="font-family:Georgia,serif;color:#c0396e;font-size:1.6rem;margin-bottom:12px;line-height:1.4;">You're Invited! 🎀</h2>
+      <p style="font-family:Georgia,serif;color:#888;font-size:0.95rem;line-height:1.7;margin-bottom:28px;">
+        Okay i will take u tomorrow to that place<br>
+        see u tomorrow <span style="color:#ff69b4;">sayangku</span> 💕
+      </p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="yesClicked()" style="background:linear-gradient(135deg,#ff69b4,#ff1493);color:white;border:none;padding:14px 32px;border-radius:999px;font-size:1rem;cursor:pointer;font-family:Georgia,serif;letter-spacing:1px;box-shadow:0 4px 20px rgba(255,105,180,0.4);">Iya mau 💗</button>
+        <button id="no-btn" onclick="noClicked()" style="background:transparent;color:#ff69b4;border:2px solid #ff69b4;padding:14px 32px;border-radius:999px;font-size:1rem;cursor:pointer;font-family:Georgia,serif;letter-spacing:1px;">Tidak mau 🙁</button>
+      </div>
+    </div>`;
+  document.body.appendChild(inv);
+  createStars(inv.querySelector('canvas'));
 }
 
+let noCount = 0;
+function noClicked() {
+  noCount++;
+  if(noCount === 1) {
+    showPopup('Yakin ga mau?? 🥺', 'Masa iya ga mau sih...', false);
+  } else if(noCount === 2) {
+    showPopup('Serius nih?? 😢', 'Seriuss nihhhh???', false);
+  } else {
+    document.getElementById('no-btn').style.display = 'none';
+    showPopup('Harus mau lahh anjayyyy ini maksa 😤💕', 'Oke fine... harus mau!', true);
+  }
+}
+
+function showPopup(title, msg, hideNo) {
+  const old = document.getElementById('popup-overlay');
+  if(old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'popup-overlay';
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:flex;align-items:center;justify-content:center;`;
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:32px 28px;text-align:center;max-width:320px;width:90%;box-shadow:0 0 40px rgba(255,105,180,0.5);">
+      <div style="font-size:2.5rem;margin-bottom:12px;">🥺</div>
+      <h3 style="font-family:Georgia,serif;color:#c0396e;margin-bottom:8px;font-size:1.2rem;">${title}</h3>
+      <p style="color:#888;font-size:0.9rem;margin-bottom:20px;font-family:Georgia,serif;">${msg}</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="yesClicked()" style="background:linear-gradient(135deg,#ff69b4,#ff1493);color:white;border:none;padding:10px 24px;border-radius:999px;font-size:0.9rem;cursor:pointer;font-family:Georgia,serif;">Iya mau 💗</button>
+        ${!hideNo ? `<button onclick="document.getElementById('popup-overlay').remove()" style="background:transparent;color:#ff69b4;border:2px solid #ff69b4;padding:10px 24px;border-radius:999px;font-size:0.9rem;cursor:pointer;font-family:Georgia,serif;">Tetap tidak 🙁</button>` : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function yesClicked() {
+  const popup = document.getElementById('popup-overlay');
+  if(popup) popup.remove();
+  const inv = document.getElementById('inv-screen');
+  if(inv) inv.remove();
+  showFinalPage();
+}
+
+function showFinalPage() {
+  const final = document.createElement('div');
+  final.style.cssText = `position:fixed;inset:0;background:#000510;z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;`;
+  const stars2 = document.createElement('canvas');
+  stars2.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
+  final.appendChild(stars2);
+  final.innerHTML += `
+    <div style="position:relative;z-index:2;padding:32px;">
+      <div style="font-size:4rem;animation:bounce 1s infinite;">🥰</div>
+      <h2 style="font-family:Georgia,serif;color:#ff69b4;font-size:2rem;margin:16px 0;text-shadow:0 0 20px #ff69b4;">Yeayy!! See You Tomorrow! 🎉</h2>
+      <p style="font-family:Georgia,serif;color:#fff;font-size:1rem;opacity:0.8;line-height:1.8;">
+        I'll be waiting for you 💕<br>
+        <span style="color:#ff69b4;">sayangku ❤️</span>
+      </p>
+    </div>`;
+  document.body.appendChild(final);
+  createStars(final.querySelector('canvas'));
+}
+    
 </script>
 </body>
 </html>
